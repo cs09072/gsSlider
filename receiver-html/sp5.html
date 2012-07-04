@@ -1,0 +1,181 @@
+﻿<html>
+<head>
+<meta charset="UTF-8" />
+
+<script type="text/javascript">
+//[要変更]ここにWebsocket プロキシサーバのURLをセットします。
+var serverURL = "ws://white.cs.inf.shizuoka.ac.jp:10808/";
+//[要変更]ここにチャンネル文字列（半角英数字・ブラウザ側と同じ文字列）をセットします
+var channel = "hogehoge2012";
+
+
+
+var picNUM = 0;
+var picURL = new Array();
+
+var MAX = 35;
+var i;
+
+for(i = 0;i < MAX ; i++){
+	picURL[i] = "./プレゼンテーション1/スライド" + (i+1) + ".png";
+}
+
+
+
+//picURL[0]= "./images/pic0.jpg";
+//picURL[1]= "./images/pic1.jpg";
+//picURL[2]= "./images/pic2.jpg";
+//picURL[3]= "./images/pic3.jpg";
+//picURL[4]= "./images/pic4.jpg";
+//picURL[5]= "./images/pic5.jpg";
+//picURL[6]= "./images/pic6.jpg";
+//picURL[7]= "./images/pic7.jpg";
+
+var rand; //乱数取得
+var a;
+
+window.onload = function(){
+    var X = -1;
+    var Y = -1;
+    if(channel == "" || serverURL == ""){
+        document.getElementById('messageBar').innerHTML = '[ERROR] チャンネルもしくはURLが空です。';
+        return;
+    }
+    //背景を黒に塗る
+/*    var ctx = document.getElementById('myCanvas').getContext('2d');
+    ctx.fillStyle = 'black';
+    ctx.strokeStyle = 'rgb(254, 254, 254)';
+    ctx.fillRect(0, 0, 678, 1);
+*/  
+    
+    setPageLabel(picNUM+1);
+    setMaxLabel(picURL.length);
+    
+    var webSocket = new WebSocket(serverURL);
+    webSocket.onopen = function(event){
+        document.getElementById('messageBar').innerHTML = '接続完了';
+        webSocket.send(channel + ':');
+        X = 339;
+        Y = 200;
+    };
+
+        webSocket.onmessage = function(event){
+        var msg = event.data;
+        if(msg == channel + ";"){
+            document.getElementById('messageBar').innerHTML = 'ハンドシェイク完了';
+        }else if(msg.indexOf(channel + ":") == 0){
+            //メッセージはココで受信
+            //チャンネル削除
+            msg = msg.substring(msg.indexOf(":")+1);
+            //カンマで分けて配列へ
+            var fields = msg.split(",");
+            
+            //配列最初の要素はコマンド名なので取り出します。
+            var cmd = fields.shift();
+            //コマンドに応じて処理を切り替えます。
+
+            //受信したコマンドを下部に表示
+            setCommandLabel(msg);                
+            switch(cmd){
+            case "move":
+            case "sound":
+                //注：サーバから来たデータは文字列として扱われているため、
+                //数値を送った場合使用時はparseInt等で数値化する。
+                //recog,move,[right,left,up,down]
+                switch(fields[0]){
+                    case "next":
+                    	picNUM++;
+                    	if(picNUM >= picURL.length)
+                    		picNUM = 0;
+                    	document.pic.src = picURL[picNUM];                    	
+                    	break;
+                    	
+                    case "back":
+                    	picNUM--;
+                    	if(picNUM < 0)
+                    		picNUM = picURL.length -1;
+                    	document.pic.src = picURL[picNUM];   
+                    	break;
+                    	
+                    case "first":
+                    
+                    	picNUM  = 0;
+                    	document.pic.src = picURL[picNUM];
+                    	break;
+                    	
+                    case "last":
+                    
+                    	picNUM = picURL.length - 1;
+                    	document.pic.src = picURL[picNUM];
+                    	break;
+                    
+ /*                   case "mega":
+                    	
+                   		i = now.getSeconds();
+                    	while(1){
+                    		
+                    		if(i < now.getSeconds()){
+                    			picNUM = Math.floor( Math.random() * MAX );
+                    			document.pic.src = picURL[picNUM];
+                    			i = now.getSeconds();
+                    			if(i == 59) i = -1;
+                    		}
+	                    	
+                    	}
+                    	
+                    	break; */
+                    
+                }
+                    
+//                setPageLabel(picNUM+1);
+                    
+                break;
+            }
+        }else{
+            console.log(JSON.stringify(msg));
+        }
+    };
+
+    webSocket.onclose = function(event){
+        document.getElementById('time').innerHTML = 'socket closed';
+    };
+}
+
+
+function setCommandLabel(a){
+    document.getElementById('CommandLabel').innerHTML = "" + a;
+}
+function setPageLabel(a){
+    document.getElementById('PageLabel').innerHTML = "" + a;
+}
+function setMaxLabel(a){
+    document.getElementById('MaxLabel').innerHTML = "" + a;
+}
+/*
+function setCLabel(a){
+    document.getElementById('CLabel').innerHTML = "" + a;
+}*/
+
+</script>
+</head>
+<body>
+<div style="background:white;color:white;padding:3px;" id="messageBar">&nbsp;</div>
+
+<div>
+<font color="white">
+COMMAND: <span id="CommandLabel"></span> / 
+Page: <span id="PageLabel"></span> / 
+<span id="MaxLabel"></span>  
+</font>
+</div>
+
+<!--
+<canvas id="myCanvas" width="678" height="1"></canvas>
+-->
+
+<center>
+<img src="./プレゼンテーション1/スライド1.png" name="pic"> <!-- 画像の表示 -->
+</center>
+
+</body>
+</html>
